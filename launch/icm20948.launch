@@ -1,0 +1,17 @@
+<launch>
+    <arg name="gyro_dps" default="RANGE_500_DPS"/>
+    <arg name="acc_g" default="RANGE_4G"/>
+    
+    <!--Calibration Parameters-->
+    <arg name="gyro_x_m" default="0"/>
+    <arg name="gyro_x_c" default="0"/>
+    <arg name="gyro_y_m" default="0"/>
+    <arg name="gyro_y_c" default="0"/>
+    <arg name="gyro_c_m" default="0"/>
+    <arg name="gyro_c_c" default="0"/>
+
+    <node name="icm20948" pkg="icm20948" type="icm20948.py" respawn="true" respawn_delay="2" output="screen">
+        <param name="gyro_dps" value="$(arg gyro_dps)"/>
+        <param name="acc_g" value="$(arg acc_g)"/>
+    </node>
+</launch>
