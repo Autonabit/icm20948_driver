@@ -7,77 +7,91 @@ from sensor_msgs.msg import MagneticField,Imu
 from std_msgs.msg import Float64
 from adafruit_icm20x import ICM20948,AccelRange,GyroRange,MagDataRate
 
-def icm20948_node():
+class ICM20948_NODE(object):
 
-    raw_pub = rospy.Publisher('icm20948/raw', Imu, queue_size=10)
-    mag_pub = rospy.Publisher('icm20948/mag', MagneticField, queue_size=10)
-    rospy.init_node('icm20948')
+    def __init__(self):
+        rospy.init_node('icm20948')
+        self.raw_pub = rospy.Publisher('icm20948/raw', Imu, queue_size=10)
+        self.mag_pub = rospy.Publisher('icm20948/mag', MagneticField, queue_size=10)
+        self.i2c = busio.I2C(board.SCL, board.SDA)
+        self.icm = ICM20948(self.i2c)
+        self.initialize_imu()
 
-    i2c = busio.I2C(board.SCL, board.SDA)
-    icm = ICM20948(i2c)
+        self.mag_hard_x = rospy.get_param('~mag_hard_x', 0)
+        self.mag_hard_y = rospy.get_param('~mag_hard_y', 0)
+        self.mag_hard_z = rospy.get_param('~mag_hard_z', 0)
 
-    if hasattr(AccelRange, rospy.get_param('~acc_g')):
-        rospy.loginfo("Setting accel range to %s" %rospy.get_param('~acc_g'))
-        icm.accelerometer_range = getattr(AccelRange, rospy.get_param('~acc_g'))
-    else:
-        rospy.logerr("%s is not a valid accel range" %rospy.get_param('~acc_g'))
-        return
+    def initialize_imu(self):
+        if hasattr(AccelRange, rospy.get_param('~acc_g')):
+            rospy.loginfo("Setting accel range to %s" %rospy.get_param('~acc_g'))
+            self.icm.accelerometer_range = getattr(AccelRange, rospy.get_param('~acc_g'))
+        else:
+            rospy.logerr("%s is not a valid accel range" %rospy.get_param('~acc_g'))
+            return
 
-    if hasattr(GyroRange, rospy.get_param('~gyro_dps')):
-        rospy.loginfo("Setting gyro range to %s" %rospy.get_param('~gyro_dps'))
-        icm.gyro_range = getattr(GyroRange, rospy.get_param('~gyro_dps'))
-    else:
-        rospy.logerr("%s is not a valid gyro range" %rospy.get_param('~gyro_dps'))
-        return
+        if hasattr(GyroRange, rospy.get_param('~gyro_dps')):
+            rospy.loginfo("Setting gyro range to %s" %rospy.get_param('~gyro_dps'))
+            self.icm.gyro_range = getattr(GyroRange, rospy.get_param('~gyro_dps'))
+        else:
+            rospy.logerr("%s is not a valid gyro range" %rospy.get_param('~gyro_dps'))
+            return
 
-    
-    # Set up IMU sensors for 100hz operation
-    icm.accelerometer_data_rate_divisor = 10  # ~102.27Hz
-    icm.gyro_data_rate_divisor = 10 # 100Hz
-    icm.magnetometer_data_rate = MagDataRate.RATE_100HZ
-    rate = rospy.Rate(100)
+        # Set up IMU sensors for 100hz operation
+        self.icm.accelerometer_data_rate_divisor = 10  # ~102.27Hz
+        self.icm.gyro_data_rate_divisor = 10 # 100Hz
+        self.icm.magnetometer_data_rate = MagDataRate.RATE_100HZ
 
-    while not rospy.is_shutdown():
-        messurement_time = rospy.Time.now()
-        acc_data = icm.acceleration
-        gyr_data = icm.gyro
-        mag_data = tuple(i*1e-6 for i in icm.magnetic) #convert from uT to T
+    @property
+    def magnetic(self):
+        mag = tuple(i*1e-6 for i in self.icm.magnetic) #convert from uT to T
+        return (mag[0]+self.mag_hard_x, mag[1]+self.mag_hard_y, mag[2]+self.mag_hard_z)
 
-        raw_msg = Imu()
-        raw_msg.header.stamp = messurement_time
-	            
-        raw_msg.orientation.w = 0
-        raw_msg.orientation.x = 0
-        raw_msg.orientation.y = 0
-        raw_msg.orientation.z = 0
+
+    def run(self):        
+        rate = rospy.Rate(100)
+
+        while not rospy.is_shutdown():
+            messurement_time = rospy.Time.now()
+            acc_data = self.icm.acceleration
+            gyr_data = self.icm.gyro
+            mag_data = self.magnetic
+
+            raw_msg = Imu()
+            raw_msg.header.stamp = messurement_time
+                    
+            raw_msg.orientation.w = 0
+            raw_msg.orientation.x = 0
+            raw_msg.orientation.y = 0
+            raw_msg.orientation.z = 0
+                
+            raw_msg.linear_acceleration.x = acc_data[0]
+            raw_msg.linear_acceleration.y = acc_data[1]
+            raw_msg.linear_acceleration.z = acc_data[2]
+                
+            raw_msg.angular_velocity.x = gyr_data[0]
+            raw_msg.angular_velocity.y = gyr_data[1]
+            raw_msg.angular_velocity.z = gyr_data[2]
+                
+            raw_msg.orientation_covariance[0] = -1
+            raw_msg.linear_acceleration_covariance[0] = -1
+            raw_msg.angular_velocity_covariance[0] = -1
+            self.raw_pub.publish(raw_msg)
             
-        raw_msg.linear_acceleration.x = acc_data[0]
-        raw_msg.linear_acceleration.y = acc_data[1]
-        raw_msg.linear_acceleration.z = acc_data[2]
-            
-        raw_msg.angular_velocity.x = gyr_data[0]
-        raw_msg.angular_velocity.y = gyr_data[1]
-        raw_msg.angular_velocity.z = gyr_data[2]
-            
-        raw_msg.orientation_covariance[0] = -1
-        raw_msg.linear_acceleration_covariance[0] = -1
-        raw_msg.angular_velocity_covariance[0] = -1
-        raw_pub.publish(raw_msg)
+            mag_msg = MagneticField()
+            mag_msg.header.stamp = messurement_time
+            mag_msg.magnetic_field.x = mag_data[0]
+            mag_msg.magnetic_field.y = mag_data[1]
+            mag_msg.magnetic_field.z = mag_data[2]
+            mag_msg.magnetic_field_covariance[0] = -1
+            self.mag_pub.publish(mag_msg)
+
+            rate.sleep()   
         
-        mag_msg = MagneticField()
-        mag_msg.header.stamp = messurement_time
-        mag_msg.magnetic_field.x = mag_data[0]
-        mag_msg.magnetic_field.y = mag_data[1]
-        mag_msg.magnetic_field.z = mag_data[2]
-        mag_msg.magnetic_field_covariance[0] = -1
-        mag_pub.publish(mag_msg)
-
-        rate.sleep()   
-    
-    rospy.loginfo(rospy.get_caller_id() + "  icm20948 node finished")
+        rospy.loginfo(rospy.get_caller_id() + "  icm20948 node finished")
 
 if __name__ == '__main__':
     try:
-        icm20948_node()
+        icm =  ICM20948_NODE()
+        icm.run()
     except rospy.ROSInterruptException:
         rospy.loginfo(rospy.get_caller_id() + "  icm20948 node exited with exception.")
