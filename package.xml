@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>icm20948</name>
+  <name>icm20948_driver</name>
   <version>0.0.0</version>
-  <description>The icm20948 package</description>
+  <description>ROS driver for the icm20948 IMU</description>
   <maintainer email="josh@autonabit.nz">Josh McCulloch</maintainer>
   <license>TODO</license>
   <!-- <url type="website">http://wiki.ros.org/icm20948</url> -->
