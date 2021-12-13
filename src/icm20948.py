@@ -11,8 +11,8 @@ class ICM20948_NODE(object):
 
     def __init__(self):
         rospy.init_node('icm20948')
-        self.raw_pub = rospy.Publisher('icm20948/raw', Imu, queue_size=10)
-        self.mag_pub = rospy.Publisher('icm20948/mag', MagneticField, queue_size=10)
+        self.raw_pub = rospy.Publisher('imu/data_raw', Imu, queue_size=10)
+        self.mag_pub = rospy.Publisher('imu/mag', MagneticField, queue_size=10)
         self.i2c = busio.I2C(board.SCL, board.SDA)
         self.icm = ICM20948(self.i2c)
         self.initialize_imu()
@@ -44,20 +44,21 @@ class ICM20948_NODE(object):
     @property
     def magnetic(self):
         mag = tuple(i*1e-6 for i in self.icm.magnetic) #convert from uT to T
-        return (mag[0]+self.mag_hard_x, mag[1]+self.mag_hard_y, mag[2]+self.mag_hard_z)
+        return (mag[0]-self.mag_hard_x, mag[1]-self.mag_hard_y, mag[2]-self.mag_hard_z)
 
 
     def run(self):        
         rate = rospy.Rate(100)
 
         while not rospy.is_shutdown():
-            messurement_time = rospy.Time.now()
+            measurement_time = rospy.Time.now()
             acc_data = self.icm.acceleration
             gyr_data = self.icm.gyro
             mag_data = self.magnetic
 
             raw_msg = Imu()
-            raw_msg.header.stamp = messurement_time
+            raw_msg.header.stamp = measurement_time
+            raw_msg.header.frame_id = "imu"
                     
             raw_msg.orientation.w = 0
             raw_msg.orientation.x = 0
@@ -78,7 +79,8 @@ class ICM20948_NODE(object):
             self.raw_pub.publish(raw_msg)
             
             mag_msg = MagneticField()
-            mag_msg.header.stamp = messurement_time
+            mag_msg.header.stamp = measurement_time
+            mag_msg.header.frame_id = "imu"
             mag_msg.magnetic_field.x = mag_data[0]
             mag_msg.magnetic_field.y = mag_data[1]
             mag_msg.magnetic_field.z = mag_data[2]

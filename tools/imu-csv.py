@@ -27,6 +27,6 @@ with open("imu.csv", "w") as csv:
             data = "{:e}, {:e}, {:e}, {:e}, {:e},{:e}, {:e}, {:e},{:e}, {:e}, {:e},".format(time.time()-start, t, a[0], a[1], a[2], g[0], g[1], g[2], m[0], m[1], m[2])
             print(data)
             csv.write(data+"\n")
-            time.sleep(0.1)
+            #time.sleep(0.1)
     except KeyboardInterrupt:
         print("exiting")
