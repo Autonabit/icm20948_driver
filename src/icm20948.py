@@ -21,6 +21,10 @@ class ICM20948_NODE(object):
         self.mag_hard_y = rospy.get_param('~mag_hard_y', 0)
         self.mag_hard_z = rospy.get_param('~mag_hard_z', 0)
 
+        self.mag_soft_x = rospy.get_param('~mag_soft_x', 0)
+        self.mag_soft_y = rospy.get_param('~mag_soft_y', 0)
+        self.mag_soft_z = rospy.get_param('~mag_soft_z', 0)
+
     def initialize_imu(self):
         if hasattr(AccelRange, rospy.get_param('~acc_g')):
             rospy.loginfo("Setting accel range to %s" %rospy.get_param('~acc_g'))
@@ -44,7 +48,10 @@ class ICM20948_NODE(object):
     @property
     def magnetic(self):
         mag = tuple(i*1e-6 for i in self.icm.magnetic) #convert from uT to T
-        return (mag[0]-self.mag_hard_x, mag[1]-self.mag_hard_y, mag[2]-self.mag_hard_z)
+        return (
+            (mag[0]-self.mag_hard_x) * self.mag_soft_x, 
+            (mag[1]-self.mag_hard_y) * self.mag_soft_y, 
+            (mag[2]-self.mag_hard_z) * self.mag_soft_z)
 
 
     def run(self):        
@@ -82,8 +89,8 @@ class ICM20948_NODE(object):
             mag_msg.header.stamp = measurement_time
             mag_msg.header.frame_id = "imu"
             mag_msg.magnetic_field.x = mag_data[0]
-            mag_msg.magnetic_field.y = mag_data[1]
-            mag_msg.magnetic_field.z = mag_data[2]
+            mag_msg.magnetic_field.y = -mag_data[1]
+            mag_msg.magnetic_field.z = -mag_data[2]
             mag_msg.magnetic_field_covariance[0] = -1
             self.mag_pub.publish(mag_msg)
 

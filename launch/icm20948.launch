@@ -6,6 +6,10 @@
     <arg name="mag_hard_y" default="-2.872500e-05"/>
     <arg name="mag_hard_z" default="4.147500e-05"/>
 
+    <arg name="mag_soft_x" default="9.869015e-01"/>
+    <arg name="mag_soft_y" default="1.022940e+00"/>
+    <arg name="mag_soft_z" default="9.909297e-01"/>
+
     <arg name="latitude" default="-43.522"/>
     <arg name="longitude" default="172.577"/>
     
@@ -16,5 +20,25 @@
         <param name="mag_hard_x" value="$(arg mag_hard_x)"/>
         <param name="mag_hard_y" value="$(arg mag_hard_y)"/>
         <param name="mag_hard_z" value="$(arg mag_hard_z)"/>
+
+        <param name="mag_soft_x" value="$(arg mag_soft_x)"/>
+        <param name="mag_soft_y" value="$(arg mag_soft_y)"/>
+        <param name="mag_soft_z" value="$(arg mag_soft_z)"/>
     </node>
+
+    <node name="imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
+        <param name="stateless" value="false"/>
+        <param name="use_mag" value="true"/>
+    </node>
+
+    <!-- <node pkg="imu_complementary_filter" type="complementary_filter_node"
+      name="complementary_filter_gain_node" output="screen">
+        <param name="do_bias_estimation" value="true"/>
+        <param name="do_adaptive_gain" value="true"/>
+        <param name="use_mag" value="true"/>
+        <param name="gain_acc" value="0.01"/>
+        <param name="gain_mag" value="0.01"/>
+    </node> -->
+
+    <node name="mag_marker_publisher" pkg="icm20948_driver" type="mag_marker_publisher.py"/>
 </launch>
