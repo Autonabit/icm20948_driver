@@ -65,7 +65,7 @@ class ICM20948_NODE(object):
 
             raw_msg = Imu()
             raw_msg.header.stamp = measurement_time
-            raw_msg.header.frame_id = "imu"
+            raw_msg.header.frame_id = "imu_link"
                     
             raw_msg.orientation.w = 0
             raw_msg.orientation.x = 0
@@ -80,9 +80,9 @@ class ICM20948_NODE(object):
             raw_msg.angular_velocity.y = gyr_data[1]
             raw_msg.angular_velocity.z = gyr_data[2]
                 
-            raw_msg.orientation_covariance[0] = -1
-            raw_msg.linear_acceleration_covariance[0] = -1
-            raw_msg.angular_velocity_covariance[0] = -1
+            raw_msg.orientation_covariance[0] = 0
+            raw_msg.linear_acceleration_covariance[0] = 0
+            raw_msg.angular_velocity_covariance[0] = 0
             self.raw_pub.publish(raw_msg)
             
             mag_msg = MagneticField()
@@ -91,7 +91,9 @@ class ICM20948_NODE(object):
             mag_msg.magnetic_field.x = mag_data[0]
             mag_msg.magnetic_field.y = -mag_data[1]
             mag_msg.magnetic_field.z = -mag_data[2]
-            mag_msg.magnetic_field_covariance[0] = -1
+            mag_msg.magnetic_field_covariance[0] = 1e-07
+            mag_msg.magnetic_field_covariance[4] = 1e-07
+            mag_msg.magnetic_field_covariance[8] = 1e-07
             self.mag_pub.publish(mag_msg)
 
             rate.sleep()   
