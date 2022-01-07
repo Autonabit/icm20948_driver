@@ -3,6 +3,7 @@
 import rospy
 import board
 import busio
+import numpy as np
 from sensor_msgs.msg import MagneticField,Imu
 from std_msgs.msg import Float64
 from adafruit_icm20x import ICM20948,AccelRange,GyroRange,MagDataRate
@@ -17,13 +18,21 @@ class ICM20948_NODE(object):
         self.icm = ICM20948(self.i2c)
         self.initialize_imu()
 
-        self.mag_hard_x = rospy.get_param('~mag_hard_x', 0)
-        self.mag_hard_y = rospy.get_param('~mag_hard_y', 0)
-        self.mag_hard_z = rospy.get_param('~mag_hard_z', 0)
+        try:
+            self.soft_iron = np.array(rospy.get_param("~soft_iron")).reshape((3,3)) 
+            rospy.loginfo("Loaded soft-iron calibration")
+            rospy.loginfo(self.soft_iron)
+        except:
+            rospy.logerr("Unable to load soft-iron calibration")
+            self.soft_iron = np.identity(3)
 
-        self.mag_soft_x = rospy.get_param('~mag_soft_x', 0)
-        self.mag_soft_y = rospy.get_param('~mag_soft_y', 0)
-        self.mag_soft_z = rospy.get_param('~mag_soft_z', 0)
+        try:
+            self.hard_iron = np.array(rospy.get_param("~hard_iron"))
+            rospy.loginfo("Loaded hard-iron calibration")
+            rospy.loginfo(self.hard_iron)
+        except:
+            rospy.logerr("Unable to load hard-iron calibration")
+            self.hard_iron = np.zeros(3)
 
     def initialize_imu(self):
         if hasattr(AccelRange, rospy.get_param('~acc_g')):
@@ -47,11 +56,10 @@ class ICM20948_NODE(object):
 
     @property
     def magnetic(self):
-        mag = tuple(i*1e-6 for i in self.icm.magnetic) #convert from uT to T
-        return (
-            (mag[0]-self.mag_hard_x) * self.mag_soft_x, 
-            (mag[1]-self.mag_hard_y) * self.mag_soft_y, 
-            (mag[2]-self.mag_hard_z) * self.mag_soft_z)
+        mag = np.array(self.icm.magnetic)
+        calib_mag = self.soft_iron @ (mag - self.hard_iron)
+        calib_mag *= 1e-6 # convert uT to T
+        return tuple(calib_mag) 
 
 
     def run(self):        

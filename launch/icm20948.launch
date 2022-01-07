@@ -1,29 +1,12 @@
 <launch>
     <arg name="gyro_dps" default="RANGE_500_DPS"/>
     <arg name="acc_g" default="RANGE_4G"/>
-
-    <arg name="mag_hard_x" default="-2.047500e-05"/>
-    <arg name="mag_hard_y" default="-2.872500e-05"/>
-    <arg name="mag_hard_z" default="4.147500e-05"/>
-
-    <arg name="mag_soft_x" default="9.869015e-01"/>
-    <arg name="mag_soft_y" default="1.022940e+00"/>
-    <arg name="mag_soft_z" default="9.909297e-01"/>
-
-    <arg name="latitude" default="-43.522"/>
-    <arg name="longitude" default="172.577"/>
     
     <node name="icm20948" pkg="icm20948_driver" type="icm20948.py" respawn="false" respawn_delay="2" output="screen">
         <param name="gyro_dps" value="$(arg gyro_dps)"/>
         <param name="acc_g" value="$(arg acc_g)"/>
 
-        <param name="mag_hard_x" value="$(arg mag_hard_x)"/>
-        <param name="mag_hard_y" value="$(arg mag_hard_y)"/>
-        <param name="mag_hard_z" value="$(arg mag_hard_z)"/>
-
-        <param name="mag_soft_x" value="$(arg mag_soft_x)"/>
-        <param name="mag_soft_y" value="$(arg mag_soft_y)"/>
-        <param name="mag_soft_z" value="$(arg mag_soft_z)"/>
+        <rosparam command="load" file="$(find icm20948_driver)/tools/calibration.yaml" />
     </node>
 
     <!-- <node name="imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
