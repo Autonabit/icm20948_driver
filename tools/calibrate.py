@@ -2,12 +2,29 @@ import sys
 import numpy as np
 from scipy import linalg
 
+class FilterValue(object):
+
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.count = 0
+
+    def add(self,x,y,z):
+        self.x += x
+        self.y += y
+        self.z += z
+        self.count += 1
+
+    def get(self):
+        return [self.x/self.count, self.y/self.count, self.z/self.count]
+
 class CSV(object):
     
     def __init__(self, bus):
         self.points = []
         
-        with open("imu_inside.csv") as mag: 
+        with open("imu.csv") as mag: 
             for line in mag:
                 values = line.split(",")
                 try:
@@ -16,6 +33,28 @@ class CSV(object):
                     pass
                 
         self.index = 0
+
+    def downsample(self,window):
+        filter = dict()
+        for p in self.points:
+            x,y,z = p 
+            xf = int(round(x / window))
+            yf = int(round(y / window))
+            zf = int(round(z / window))
+            #print(xf,yf,zf,'-',x,y,z)
+            key = (xf,yf,zf)
+            if key not in filter:
+                filter[key] = FilterValue()
+            filter[key].add(x,y,z)
+
+        # for key in filter:
+        #     print(key,'-',filter[key].get())
+        print("Downsampling %d to %d points" %(len(self.points), len(filter)))
+        self.points = []
+        for vf in filter.values():
+            
+            self.points.append( vf.get() )
+
     
     def read(self):
         if self.index == len(self.points):
@@ -168,6 +207,7 @@ hard_iron_template = """
 hard_iron: [%f, %f, %f]"""
 
 m = Magnetometer('csv', 1, 57.00)
+m.sensor.downsample(2)
 m.calibrate()
 
 
