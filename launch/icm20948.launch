@@ -6,7 +6,7 @@
         <param name="gyro_dps" value="$(arg gyro_dps)"/>
         <param name="acc_g" value="$(arg acc_g)"/>
 
-        <rosparam command="load" file="$(find icm20948_driver)/tools/on_top_of_vehicle.yaml" />
+        <rosparam command="load" file="$(find icm20948_driver)/tools/calibration.yaml" />
     </node>
 
     <!-- <node name="imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
