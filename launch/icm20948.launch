@@ -22,6 +22,6 @@
         <param name="gain_acc" value="0.01"/>
         <param name="gain_mag" value="0.01"/>
     </node> -->
-
-    <node name="mag_marker_publisher" pkg="icm20948_driver" type="mag_marker_publisher.py"/>
+<!--
+    <node name="mag_marker_publisher" pkg="icm20948_driver" type="mag_marker_publisher.py"/> -->
 </launch>
